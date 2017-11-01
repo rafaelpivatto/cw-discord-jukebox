@@ -41,7 +41,8 @@ let connection,
     playlist = [],
     dispatcher,
     musicPlaying,
-    countToAdvertising = 0;
+    countToAdvertising = 0,
+    maximumMusicRequests = process.env.MUSIC_MAXIMUM_USER_REQUESTS || 5;
 
 module.exports = class PlayMusicCommand extends Command {
     constructor(client) {
@@ -69,6 +70,11 @@ module.exports = class PlayMusicCommand extends Command {
                 return msg.channel.send('Envie **!musica add <nome da musica>** ou ' +
                     '**!musica add <link do youtube>** para adicionar uma música à fila');
             } else {
+                if (isExceededMaximumRequests(msg)) {
+                    const userName = msg.member.nickname || msg.message.author.username;
+                    return msg.channel.send(userName + ', você já tem ' + maximumMusicRequests + ' músicas na fila.\n' +
+                        'Conforme elas forem tocando você poderá adicionar outras ;) aproveite o som comandante!');
+                }
                 searchSong(msg, music)
             }
         } else if(isModeratorCommands(args)) {
@@ -232,13 +238,17 @@ module.exports = class PlayMusicCommand extends Command {
                     });
                     
                     dispatcher.on('error', (error) => {
-                        // Skip to the next song.
-                        logger.error(logName + ' ' + error);
-                        msg.channel.send('Houve um erro inesperado, por favor avise algum admin-bot\n' +
-                            '```Código: dispatcher => ' + error + '```');
-                        playlist.shift();
                         stream.end();
-                        executePlaylist(msg, playlist);
+                        if (error.message === 'Cannot read property \'send\' of null') {
+                            executePlaylist(msg, playlist);
+                        } else {
+                            // Skip to the next song.
+                            logger.error(logName + ' ' + error);
+                            msg.channel.send('Houve um erro inesperado, por favor avise algum admin-bot\n' +
+                                '```Código: dispatcher => ' + error + '```');
+                            playlist.shift();
+                            executePlaylist(msg, playlist);
+                        }                        
                     });
     
                     dispatcher.on('end', () => {
@@ -297,11 +307,20 @@ module.exports = class PlayMusicCommand extends Command {
             if (process.env.MUSIC_ADMIN_ROLE) {
                 return msg.member.roles.find('name', process.env.MUSIC_ADMIN_ROLE);
             }
-            return true;
+            return false;
         }
 
         function isUserRequestMusic(msg, musicNumber) {
             return playlist[musicNumber-1].requester.id === msg.author.id;
+        }
+
+        function isExceededMaximumRequests(msg) {
+            if (isModeratorUser(msg)) return false;
+
+            const userId = msg.author.id;
+            const userMusics = playlist.filter(x => x.requester.id === userId).length;
+
+            return userMusics >= maximumMusicRequests;
         }
 
         function setControllCommand(args, msg) {
