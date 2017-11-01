@@ -377,12 +377,18 @@ module.exports = class PlayMusicCommand extends Command {
                 case 'parar':
                 if (playlist.length > 0) {
                     const authorName = msg.member.nickname || msg.message.author.username;
+                    let message = '';
+                    if (playlist.length === 1) {
+                        message = '1 música foi removida da fila';
+                    } else {
+                        message = playlist.length + ' músicas foram removidas da fila.';
+                    }
                     const embed = new RichEmbed()
                         .setColor(embedYellow)
                         .setTimestamp()
                         .setAuthor(authorName + ' removeu...', getCleanUrl(msg.author))
                         .setFooter('Listen safe, cmdr!')
-                        .setDescription('Ok... ' + playlist.length + ' músicas foram removidas da fila.');
+                        .setDescription('Ok... ' + message);
                     msg.channel.send({'embed': embed});
                 }
                 removeItems(playlist, 0, playlist.length);
