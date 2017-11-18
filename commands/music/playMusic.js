@@ -41,7 +41,7 @@ let connection,
     playlist = [],
     dispatcher,
     musicPlaying,
-    countToAdvertising = 0,
+    errorRetrying = 0,
     maximumMusicRequests = process.env.MUSIC_MAXIMUM_USER_REQUESTS || 5;
 
 module.exports = class PlayMusicCommand extends Command {
@@ -239,8 +239,13 @@ module.exports = class PlayMusicCommand extends Command {
                     
                     dispatcher.on('error', (error) => {
                         stream.end();
-                        if (error.message === 'Cannot read property \'send\' of null') {
-                            executePlaylist(msg, playlist);
+                        if (error.message.indexOf('Cannot read property') > -1 && errorRetrying <= 3) {
+                            //Wait 3 seconds and retry again, possible discord stream error...
+                            errorRetrying++;
+                            logger.error(logName + ' Retrying #' + errorRetrying + '... error: ' + error);
+                            setTimeout(() => {
+                                executePlaylist(msg, playlist);
+                            }, 3000);
                         } else {
                             // Skip to the next song.
                             logger.error(logName + ' ' + error);
@@ -252,6 +257,7 @@ module.exports = class PlayMusicCommand extends Command {
                     });
     
                     dispatcher.on('end', () => {
+                        errorRetrying = 0;
                         stream.end();
                         logger.info(logName + ' fim da música.');
                         // Wait a second.
@@ -294,12 +300,12 @@ module.exports = class PlayMusicCommand extends Command {
         }
 
         function isModeratorCommands(args) {
-            const controlls = ['parar','pausar', 'continuar','vol+','vol-'];
+            const controlls = ['parar','pausar', 'continuar'];
             return controlls.includes(getCommandWithoutParam(args)[0]);
         }
 
         function isCommunityCommand(args) {
-            const controlls = ['remover', 'proxima','fila', 'lista'];
+            const controlls = ['remover', 'proxima','fila', 'lista', 'vol+','vol-'];
             return controlls.includes(getCommandWithoutParam(args)[0]);
         }
 
