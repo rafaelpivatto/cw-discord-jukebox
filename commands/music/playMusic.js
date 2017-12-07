@@ -41,7 +41,6 @@ let connection,
     playlist = [],
     dispatcher,
     musicPlaying,
-    errorRetrying = 0,
     maximumMusicRequests = process.env.MUSIC_MAXIMUM_USER_REQUESTS || 5;
 
 module.exports = class PlayMusicCommand extends Command {
@@ -239,25 +238,14 @@ module.exports = class PlayMusicCommand extends Command {
                     
                     dispatcher.on('error', (error) => {
                         stream.end();
-                        if (error.message.indexOf('Cannot read property') > -1 && errorRetrying <= 3) {
-                            //Wait 3 seconds and retry again, possible discord stream error...
-                            errorRetrying++;
-                            logger.error(logName + ' Retrying #' + errorRetrying + '... error: ' + error);
-                            setTimeout(() => {
-                                executePlaylist(msg, playlist);
-                            }, 3000);
-                        } else {
-                            // Skip to the next song.
-                            logger.error(logName + ' ' + error);
-                            msg.channel.send('Houve um erro inesperado, por favor avise algum admin-bot\n' +
-                                '```Código: dispatcher => ' + error + '```');
-                            playlist.shift();
-                            executePlaylist(msg, playlist);
-                        }                        
+                        // Skip to the next song.
+                        logger.error(logName + ' ' + error);
+                        msg.channel.send('```Houve um erro no discord ao tocar essa música :(\n\nTente novamente.```');
+                        playlist.shift();
+                        executePlaylist(msg, playlist);                    
                     });
     
                     dispatcher.on('end', () => {
-                        errorRetrying = 0;
                         stream.end();
                         logger.info(logName + ' fim da música.');
                         // Wait a second.
@@ -317,7 +305,7 @@ module.exports = class PlayMusicCommand extends Command {
         }
 
         function isUserRequestMusic(msg, musicNumber) {
-            return playlist[musicNumber-1].requester.id === msg.author.id;
+            return playlist[musicNumber-1] && playlist[musicNumber-1].requester.id === msg.author.id;
         }
 
         function isExceededMaximumRequests(msg) {
@@ -349,8 +337,8 @@ module.exports = class PlayMusicCommand extends Command {
 
                 case 'remover':
                     const numberToRemove = Number(command[1]);
-                    if (command[1] && !isNaN(numberToRemove))
-                        if (numberToRemove < 0 || numberToRemove > playlist.length) {
+                    if (command[1] && !isNaN(numberToRemove)) {
+                        if (numberToRemove <= 0 || numberToRemove > playlist.length) {
                             return msg.channel.send('O número da música informado é inválido.');
                         } else {
                             if (isModeratorUser(msg) || isUserRequestMusic(msg, numberToRemove)) {
@@ -375,7 +363,7 @@ module.exports = class PlayMusicCommand extends Command {
                                     .setDescription('Você só pode remover músicas que você adicionou à fila ou se tiver permissão de moderador.')});
                             }
                         }
-                    else {
+                    } else {
                         return msg.channel.send('Você deve informar o número da musica na fila que deseja remover. ex: !musica remover 2');
                     }
                 break;
