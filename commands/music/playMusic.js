@@ -14,6 +14,7 @@ const logName = '[PlaySound]',
     embedBlue = '#0064ff',
     searchParams = [
         '-q', 
+        '-f mp4',
         '--no-warnings', 
         '--force-ipv4', 
         '--geo-bypass', 
@@ -57,7 +58,8 @@ module.exports = class PlayMusicCommand extends Command {
     }
 
     async run(msg, args) {
-        logger.info(logName + ' Execute command by user = ' + msg.message.author.username + ' >>> ' + args);
+        const authorName = msg.member.nickname || msg.message.author.username;
+        logger.info(logName + ' Execute command by user = ' + authorName + ' >>> ' + args);
 
         if (!checkRequirements(msg)) {
             return;
@@ -66,13 +68,28 @@ module.exports = class PlayMusicCommand extends Command {
         if(isAddCommands(args)) {
             const music = args.replace('add', '').trim();
             if (!music || music === '') {
-                return msg.channel.send('Envie **!musica add <nome da musica>** ou ' +
-                    '**!musica add <link do youtube>** para adicionar uma música à fila');
+                const embed = new RichEmbed()
+                    .setColor(embedRed)
+                    .setAuthor(authorName, getCleanUrl(msg.author))
+                    .setDescription('Envie **!musica add <nome da musica>** ou ' +
+                    '**!musica add <link do youtube>** para adicionar uma música à fila\n' +
+                    'Se precisar de ajuda, digite **!ajudamusica**');
+            
+                return msg.channel.send({'embed': embed}).then(response => {
+                    msg.delete();
+                });
             } else {
                 if (isExceededMaximumRequests(msg)) {
-                    const userName = msg.member.nickname || msg.message.author.username;
-                    return msg.channel.send(userName + ', você já tem ' + maximumMusicRequests + ' músicas na fila.\n' +
-                        'Conforme elas forem tocando você poderá adicionar outras ;) aproveite o som comandante!');
+                    const embed = new RichEmbed()
+                        .setColor(embedRed)
+                        .setAuthor(authorName, getCleanUrl(msg.author))
+                        .setDescription('Você já tem ' + maximumMusicRequests + ' músicas na fila.\n' +
+                        'Conforme elas forem tocando você poderá adicionar outras ;) aproveite o som comandante!\n' +
+                        'Se precisar de ajuda, digite **!ajudamusica**');
+                
+                    return msg.channel.send({'embed': embed}).then(response => {
+                        msg.delete();
+                    });
                 }
                 searchSong(msg, music)
             }
@@ -81,17 +98,30 @@ module.exports = class PlayMusicCommand extends Command {
                 setControllCommand(args, msg);
             } else {
                 logger.info(logName + ' user dont have permission');
-                return msg.channel.send('Você não tem permissão para executar esse comando, solicite a algum moderador.');
+                const embed = new RichEmbed()
+                    .setColor(embedRed)
+                    .setAuthor(authorName, getCleanUrl(msg.author))
+                    .setDescription('Você não tem permissão para executar esse comando, solicite a algum moderador.');
+        
+                return msg.channel.send({'embed': embed}).then(response => {
+                    msg.delete();
+                });
             }
         } else if(isCommunityCommand(args)) {
             setControllCommand(args, msg);
         } else {
-            return msg.channel.send('Comando "' + args + '" inválido, se precisar de ajuda !ajudamusica');
+            const embed = new RichEmbed()
+                .setColor(embedRed)
+                .setAuthor(authorName, getCleanUrl(msg.author))
+                .setDescription('Comando "' + args + '" inválido, se precisar de ajuda !ajudamusica');
+
+            return msg.channel.send({'embed': embed}).then(response => {
+                msg.delete();
+            });
         }
         
         //--- Functions ---
         function searchSong(msg, music) {
-            const authorName = msg.member.nickname || msg.message.author.username;
             let searchstring = music;
             let musicLink = music;
             if (music.toLowerCase().startsWith('http')) {
@@ -120,9 +150,13 @@ module.exports = class PlayMusicCommand extends Command {
                             logger.error('Info: ', info);
                         }
                         response.delete();
-                        return msg.channel.send('Houve um erro ao pesquisar a musica :(\n'
+                        const embed = new RichEmbed()
+                            .setColor(embedRed)
+                            .setAuthor(authorName, getCleanUrl(msg.author))
+                            .setDescription('Houve um erro ao pesquisar a musica :(\n'
                             + '__Talvez__ a música não pode ser reproduzida fora do youtube.\n'
                             + 'Tente novamente ou adicione a música por outro link do youtube ;)');
+                        return msg.channel.send({'embed': embed});
                     }
                     
                     logger.info(logName + ' Search finished');
@@ -184,8 +218,11 @@ module.exports = class PlayMusicCommand extends Command {
                 getConnection(function(error){
 
                     if (error) {
-                        return msg.channel.send('Houve um erro inesperado, por favor avise algum admin-bot\n' +
-                        '```Código: get connection => ' + error + '```');
+                        const embed = new RichEmbed()
+                            .setColor(embedRed)
+                            .setDescription('Houve um erro inesperado, por favor avise algum admin-bot\n\n' +
+                            'Código: get connection => ' + error);
+                        return msg.channel.send({'embed': embed});
                     }
 
                     const stream = ytdl(music.webpage_url, music.is_live ? {} : streamOptions);
@@ -229,8 +266,11 @@ module.exports = class PlayMusicCommand extends Command {
                     connection.on('error', (error) => {
                         // Skip to the next song.
                         logger.error(logName + ' ' + error);
-                        msg.channel.send('Houve um erro inesperado, por favor avise algum admin-bot\n' +
-                            '```Código: connection => ' + error + '```');
+                        const embed = new RichEmbed()
+                            .setColor(embedRed)
+                            .setDescription('Houve um erro inesperado, por favor avise algum admin-bot\n\n' +
+                            'Código: connection => ' + error);
+                        msg.channel.send({'embed': embed});
                         playlist.shift();
                         stream.end();
                         executePlaylist(msg, playlist);
@@ -240,7 +280,10 @@ module.exports = class PlayMusicCommand extends Command {
                         stream.end();
                         // Skip to the next song.
                         logger.error(logName + ' ' + error);
-                        msg.channel.send('```Houve um erro no discord ao tocar essa música :(\n\nTente novamente.```');
+                        const embed = new RichEmbed()
+                            .setColor(embedRed)
+                            .setDescription('Houve um erro no discord ao tocar essa música :(\n\nTente novamente.');
+                        msg.channel.send({'embed': embed});
                         playlist.shift();
                         executePlaylist(msg, playlist);                    
                     });
@@ -322,24 +365,35 @@ module.exports = class PlayMusicCommand extends Command {
             const command = getCommandWithoutParam(args);
             switch (command[0]) {
                 case 'proxima':
-                if (isModeratorUser(msg) || isUserRequestMusic(msg, 1)) {
-                    if (connection && connection.paused) dispatcher.resume();
-                    if (dispatcher) dispatcher.end();
-                } else {
-                    return msg.channel.send({'embed': new RichEmbed()
-                        .setColor(embedYellow)
-                        .setTimestamp()
-                        .setAuthor(authorName, getCleanUrl(msg.author))
-                        .setFooter('Listen safe, cmdr!')
-                        .setDescription('Você só pode passar músicas que você adicionou à fila ou se tiver permissão de moderador.')});
-                }
-                break;
+                    msg.delete();
+                    if (isModeratorUser(msg) || isUserRequestMusic(msg, 1)) {
+                        if (connection && connection.paused) dispatcher.resume();
+                        if (dispatcher) dispatcher.end();
+                    } else {
+                        return msg.channel.send({'embed': new RichEmbed()
+                            .setColor(embedYellow)
+                            .setTimestamp()
+                            .setAuthor(authorName, getCleanUrl(msg.author))
+                            .setFooter('Listen safe, cmdr!')
+                            .setDescription('Você só pode passar músicas que você adicionou à fila ou se tiver permissão de moderador.')}).then(response => {
+                                response.delete(5000);
+                            });
+                    }
+                    break;
 
                 case 'remover':
+                    msg.delete();
                     const numberToRemove = Number(command[1]);
                     if (command[1] && !isNaN(numberToRemove)) {
                         if (numberToRemove <= 0 || numberToRemove > playlist.length) {
-                            return msg.channel.send('O número da música informado é inválido.');
+                            return msg.channel.send({'embed': new RichEmbed()
+                                .setColor(embedYellow)
+                                .setTimestamp()
+                                .setAuthor(authorName, getCleanUrl(msg.author))
+                                .setFooter('Listen safe, cmdr!')
+                                .setDescription('O número da música informado é inválido.')}).then(response => {
+                                    response.delete(5000);
+                                });
                         } else {
                             if (isModeratorUser(msg) || isUserRequestMusic(msg, numberToRemove)) {
                                 if (numberToRemove === 1){
@@ -360,63 +414,116 @@ module.exports = class PlayMusicCommand extends Command {
                                     .setTimestamp()
                                     .setAuthor(authorName, getCleanUrl(msg.author))
                                     .setFooter('Listen safe, cmdr!')
-                                    .setDescription('Você só pode remover músicas que você adicionou à fila ou se tiver permissão de moderador.')});
+                                    .setDescription('Você só pode remover músicas que você adicionou à fila ou se tiver permissão de moderador.')}).then(response => {
+                                        response.delete(5000);
+                                    });
                             }
                         }
                     } else {
-                        return msg.channel.send('Você deve informar o número da musica na fila que deseja remover. ex: !musica remover 2');
+                        return msg.channel.send({'embed': new RichEmbed()
+                            .setColor(embedYellow)
+                            .setTimestamp()
+                            .setAuthor(authorName, getCleanUrl(msg.author))
+                            .setFooter('Listen safe, cmdr!')
+                            .setDescription('Você deve informar o número da musica na fila que deseja remover. ex: !musica remover 2')}).then(response => {
+                                response.delete(5000);
+                            });
                     }
-                break;
+                    break;
 
                 case 'parar':
-                if (playlist.length > 0) {
-                    const authorName = msg.member.nickname || msg.message.author.username;
-                    let message = '';
-                    if (playlist.length === 1) {
-                        message = '1 música foi removida da fila';
-                    } else {
-                        message = playlist.length + ' músicas foram removidas da fila.';
+                    if (playlist.length > 0) {
+                        const authorName = msg.member.nickname || msg.message.author.username;
+                        let message = '';
+                        if (playlist.length === 1) {
+                            message = '1 música foi removida da fila';
+                        } else {
+                            message = playlist.length + ' músicas foram removidas da fila.';
+                        }
+                        const embed = new RichEmbed()
+                            .setColor(embedYellow)
+                            .setTimestamp()
+                            .setAuthor(authorName + ' removeu...', getCleanUrl(msg.author))
+                            .setFooter('Listen safe, cmdr!')
+                            .setDescription('Ok, a fila foi parada... ' + message);
+                        msg.channel.send({'embed': embed});
+                        msg.delete();
                     }
-                    const embed = new RichEmbed()
-                        .setColor(embedYellow)
-                        .setTimestamp()
-                        .setAuthor(authorName + ' removeu...', getCleanUrl(msg.author))
-                        .setFooter('Listen safe, cmdr!')
-                        .setDescription('Ok... ' + message);
-                    msg.channel.send({'embed': embed});
-                }
-                removeItems(playlist, 0, playlist.length);
-                if (connection && connection.paused) dispatcher.resume();
-                if (dispatcher) dispatcher.end();
-                if (channel) channel.leave();
-                break;
+                    removeItems(playlist, 0, playlist.length);
+                    if (connection && connection.paused) dispatcher.resume();
+                    if (dispatcher) dispatcher.end();
+                    if (channel) channel.leave();
+                    break;
 
                 case 'pausar':
-                if (dispatcher) dispatcher.pause();
-                break;
+                    if (dispatcher) {
+                        dispatcher.pause();
+                        const embed = new RichEmbed()
+                            .setColor(embedRed)
+                            .setAuthor(authorName, getCleanUrl(msg.author))
+                            .setDescription('Música pausada...\n' +
+                                'Para continuar, digite: !musica continuar');
+                    
+                        msg.channel.send({'embed': embed}).then(response => {
+                            msg.delete();
+                        });
+                    }
+                    break;
 
                 case 'continuar':
-                if (dispatcher) dispatcher.resume();
-                break;
+                    if (dispatcher) {
+                        dispatcher.resume();
+                        const embed = new RichEmbed()
+                            .setColor(embedRed)
+                            .setAuthor(authorName, getCleanUrl(msg.author))
+                            .setDescription('Continuando a música...');
+                    
+                        msg.channel.send({'embed': embed}).then(response => {
+                            msg.delete();
+                            response.delete(5000);
+                        });
+                    }
+                    break;
 
                 case 'vol+':
-                if (dispatcher)
-                if (Number(dispatcher.volume).toFixed(1) < 1) {
-                    dispatcher.setVolume(dispatcher.volume+0.1);
-                }
-                break;
+                    if (dispatcher) {
+                        msg.delete();
+                        if (Number(dispatcher.volume).toFixed(1) < 1) {
+                            
+                            const val = dispatcher.volume+0.1;
+                            dispatcher.setVolume(val);
+                            const embed = new RichEmbed()
+                                .setColor(embedRed)
+                                .setAuthor(authorName, getCleanUrl(msg.author))
+                                .setDescription('Volume aumentado para ' + String(val*100).substring(0, 2) + '%');
+                            msg.channel.send({'embed': embed}).then(response => {
+                                response.delete(3000);
+                            });
+                        }
+                    }
+                    break;
 
                 case 'vol-':
-                if (dispatcher)
-                if (Number(dispatcher.volume).toFixed(1) > 0.1) {
-                    dispatcher.setVolume(dispatcher.volume-0.1);
-                }
-                break;
+                    if (dispatcher) {
+                        msg.delete();
+                        if (Number(dispatcher.volume).toFixed(1) > 0.1) {
+                            const val = dispatcher.volume-0.1;
+                            dispatcher.setVolume(val);
+                            const embed = new RichEmbed()
+                                .setColor(embedRed)
+                                .setAuthor(authorName, getCleanUrl(msg.author))
+                                .setDescription('Volume diminuído para ' + String(val*100).substring(0, 2) + '%');
+                            msg.channel.send({'embed': embed}).then(response => {
+                                response.delete(3000);
+                            });
+                        }
+                    }
+                    break;
 
                 case 'lista':
                 case 'fila':
-                getPlaylist(msg);
-                break;
+                    getPlaylist(msg);
+                    break;
             }
         }
 
@@ -475,14 +582,17 @@ module.exports = class PlayMusicCommand extends Command {
                 if (playlist.length > 10) {
                     desc += 'Exibindo: 10/'+playlist.length;
                 }
-                let embed = new RichEmbed()
-                    .setColor(embedBlue)
-                    .setTimestamp()
+                const embed = new RichEmbed()
+                    .setColor(embedRed)
+                    .setAuthor(authorName, getCleanUrl(msg.author))
                     .setFooter('Listen safe, cmdr!')
                     .setTitle('Fila de músicas')
                     .setThumbnail('https://i.imgur.com/2j485bH.png')
                     .setDescription(desc);
-                return msg.channel.send({'embed': embed});
+            
+                return msg.channel.send({'embed': embed}).then(response => {
+                    msg.delete();
+                });
             } else {
                 return msg.channel.send('A fila está vazia.');
             }
@@ -495,22 +605,27 @@ module.exports = class PlayMusicCommand extends Command {
             const userVoiceChannelConnected = msg.message.member.voiceChannel;
     
             if (!textChannelAuthorized || !voiceChannelAuthorized) {
+                msg.delete();
                 errorMessage.sendSpecificClientErrorMessage(msg, 
-                    'Desculpe, o comando de música está temporariamente desabilitado.');
+                    'Desculpe, o comando de música está temporariamente desabilitado.', null, 5000);
                 logger.info(logName + ' command disabled');        
                 return false;
             }
     
             if (textChannelAuthorized !== userTextChannelCommand) {
+                msg.delete();
                 errorMessage.sendSpecificClientErrorMessage(msg, 
-                    'Por favor, execute os comandos de música na sala **<#' + msg.client.channels.find('name', textChannelAuthorized).id + '>**');
+                    'Por favor, execute os comandos de música na sala **<#' + 
+                    msg.client.channels.find('name', textChannelAuthorized).id + '>**', null, 5000);
                 logger.info(logName + ' command executed out of channel');
                 return false;
             }
             
             if (!isModeratorUser(msg) && (!userVoiceChannelConnected || voiceChannelAuthorized !== userVoiceChannelConnected.name)) {
+                msg.delete();
                 errorMessage.sendSpecificClientErrorMessage(msg, 
-                    'Você precisa estar na sala de aúdio **' + voiceChannelAuthorized + '** para executar os comandos de música.');
+                    'Você precisa estar na sala de aúdio **' + voiceChannelAuthorized + 
+                    '** para executar os comandos de música.', null, 5000);
                 logger.info(logName + ' user not in sound channel');
                 return false;
             }
