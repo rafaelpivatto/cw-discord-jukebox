@@ -23,7 +23,7 @@ const logName = '[PlaySound]',
     ]
     streamOptions = { 
         filter : 'audioonly',
-        quality: 'lowest' 
+        quality: 'highestaudio' 
     },
     feedbackMessages = [
         'Mandou muito bem,',
