@@ -560,18 +560,18 @@ module.exports = class PlayMusicCommand extends Command {
                 for (let i=0; i<playlist.length && i<10; i++) {
                     if (i===0) {
                         desc += ':radio: ';
-                        desc += '**Tocando agora:\n';
-                        desc += '#' + (Number(i)+1) + '- ' + playlist[i].title + '\n';
-                        desc += '\t\tDuração: ' + getDuration(playlist[i]) + ' - por: ' + playlist[i].requester.nickname + '**';
+                        desc += '**Tocando agora:**\n\n';
+                        desc += '**#' + (Number(i)+1) + ' - [' + playlist[i].title + '](' + playlist[i].webpage_url + ')**\n';
+                        desc += '\t\t**Duração: ' + getDuration(playlist[i]) + ' - por: ' + playlist[i].requester.nickname + '**';
                         if (playlist[i].is_live) {
                             desc += '\n\t\t*Essa música só termina quando finalizar a live ou quando executar o comando !musica proxima.*'
                         }
-                        desc += '\n\n';
+                        desc += '\n\n\n';
                     } else {
                         if (i===1) {
-                            desc += ':track_next: **Próximas músicas na fila:**\n';
+                            desc += ':track_next: **Próximas músicas na fila:**\n\n';
                         }
-                        desc += '**#' + (Number(i)+1) + '**- ' + playlist[i].title + '\n';
+                        desc += '**#' + (Number(i)+1) + ' - ** [' + playlist[i].title + '](' + playlist[i].webpage_url + ')\n';
                         desc += '\t\tDuração: ' + getDuration(playlist[i]) + ' - por: ' + playlist[i].requester.nickname;
                         if (playlist[i].is_live) {
                             desc += '\n\t\t*Essa música só termina quando finalizar a live ou quando executar o comando !musica proxima.*'
@@ -586,6 +586,7 @@ module.exports = class PlayMusicCommand extends Command {
                     .setColor(embedRed)
                     .setAuthor(authorName, getCleanUrl(msg.author))
                     .setFooter('Listen safe, cmdr!')
+                    .setTimestamp()
                     .setTitle('Fila de músicas')
                     .setThumbnail('https://i.imgur.com/2j485bH.png')
                     .setDescription(desc);
