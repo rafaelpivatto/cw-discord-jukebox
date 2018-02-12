@@ -14,7 +14,7 @@ const logName = '[PlaySound]',
     embedBlue = '#0064ff',
     searchParams = [
         '-q', 
-        '-f mp4',
+        '-f bestaudio',
         '--no-warnings', 
         '--force-ipv4', 
         '--geo-bypass', 
