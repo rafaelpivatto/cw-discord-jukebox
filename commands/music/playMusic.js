@@ -140,7 +140,7 @@ module.exports = class PlayMusicCommand extends Command {
             
             msg.channel.send({'embed': embedSearch}).then(response => {
                 msg.delete();
-                YoutubeDL.getInfo(searchstring, searchParams, {maxBuffer: 'Infinity'}, (err, info) => {
+                YoutubeDL.getInfo(searchstring, searchParams, {}, (err, info) => {
                     // Verify the info.
                     if (err || info.format_id === undefined || info.format_id.startsWith('0')) {
                         if (err) {
