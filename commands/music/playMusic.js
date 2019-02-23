@@ -13,14 +13,11 @@ const logName = '[PlaySound]',
     embedGreen = '#00ff64',
     embedBlue = '#0064ff',
     searchParams = [
-        '-q', 
-        '--force-ipv4', 
-        '--geo-bypass', 
+        '-q',
         '--no-playlist',
     ]
     streamOptions = { 
-        filter : 'audioonly',
-        quality: 'highestaudio' 
+        filter : 'audioonly'
     },
     feedbackMessages = [
         'Mandou muito bem,',
@@ -221,13 +218,13 @@ module.exports = class PlayMusicCommand extends Command {
                         return msg.channel.send({'embed': embed});
                     }
 
-                    logger.info('ytdl(music.webpage_url, music.is_live ? {} : streamOptions) ==> ', music.webpage_url, music.is_live ? {} : streamOptions)
+                    logger.warn('ytdl(music.webpage_url, music.is_live ? {} : streamOptions) ==> ', music.webpage_url, music.is_live ? {} : streamOptions)
                     const stream = ytdl(music.webpage_url, music.is_live ? {} : streamOptions);
                     
-                    logger.info('connection.playStream(stream, { volume: 0.1, passes: 2, bitrate: \'auto\'}) ==> ', stream, { volume: 0.1, passes: 2, bitrate: 'auto'})
+                    logger.warn('connection.playStream(stream, { volume: 0.1, passes: 2, bitrate: \'auto\'}) ==> ', stream, { volume: 0.1, passes: 2, bitrate: 'auto'})
                     dispatcher = connection.playStream(stream, { volume: 0.1, passes: 2, bitrate: 'auto'});
                     
-                    logger.info('Tocando a música ==> ',  music);
+                    logger.warn('Tocando a música ==> ',  music);
                     logger.info(logName + ' Tocando a música ' + music.title + ', duração: ' + getDuration(music));
                     
                     const songsRemaining = playlist.length-1;
