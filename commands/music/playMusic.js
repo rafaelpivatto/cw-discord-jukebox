@@ -38,7 +38,6 @@ let connection,
     channel,
     playlist = [],
     dispatcher,
-    musicPlaying,
     maximumMusicRequests = process.env.MUSIC_MAXIMUM_USER_REQUESTS || 5;
 
 module.exports = class PlayMusicCommand extends Command {
@@ -222,11 +221,15 @@ module.exports = class PlayMusicCommand extends Command {
                         return msg.channel.send({'embed': embed});
                     }
 
+                    logger.info('ytdl(music.webpage_url, music.is_live ? {} : streamOptions) ==> ', music.webpage_url, music.is_live ? {} : streamOptions)
                     const stream = ytdl(music.webpage_url, music.is_live ? {} : streamOptions);
-                    dispatcher = connection.playStream(stream, { volume: 0.1, passes: 2, bitrate: 'auto'});
-                    musicPlaying = music;
                     
+                    logger.info('connection.playStream(stream, { volume: 0.1, passes: 2, bitrate: \'auto\'}) ==> ', stream, { volume: 0.1, passes: 2, bitrate: 'auto'})
+                    dispatcher = connection.playStream(stream, { volume: 0.1, passes: 2, bitrate: 'auto'});
+                    
+                    logger.info('Tocando a música ==> ',  music);
                     logger.info(logName + ' Tocando a música ' + music.title + ', duração: ' + getDuration(music));
+                    
                     const songsRemaining = playlist.length-1;
                     let next = '\nDepois dessa... ';
                     if (songsRemaining === 1) {
