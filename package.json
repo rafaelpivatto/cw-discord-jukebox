@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "engines": {
-    "node": "9.10.1"
+    "node": "10.13.0"
   },
   "scripts": {
     "start": "node index.js --harmony-async-await"
