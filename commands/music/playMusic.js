@@ -14,12 +14,9 @@ const logName = '[PlaySound]',
     embedBlue = '#0064ff',
     searchParams = [
         '-q', 
-        '-f bestaudio',
-        '--no-warnings', 
         '--force-ipv4', 
         '--geo-bypass', 
-        '--no-playlist', 
-        '--hls-prefer-ffmpeg'
+        '--no-playlist',
     ]
     streamOptions = { 
         filter : 'audioonly',
@@ -140,7 +137,7 @@ module.exports = class PlayMusicCommand extends Command {
             
             msg.channel.send({'embed': embedSearch}).then(response => {
                 msg.delete();
-                YoutubeDL.getInfo(searchstring, searchParams, {}, (err, info) => {
+                YoutubeDL.getInfo(searchstring, searchParams, { maxBuffer: 1000 * 1024 }, (err, info) => {
                     // Verify the info.
                     if (err || info.format_id === undefined || info.format_id.startsWith('0')) {
                         if (err) {

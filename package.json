@@ -21,6 +21,6 @@
     "node-opus": "^0.2.7",
     "remove-array-items": "^1.0.0",
     "youtube-dl": "przemyslawpluta/node-youtube-dl#3349cbb6e067b6c9e7605acfa4f9d1ccc895fb0c",
-    "ytdl-core": "^0.20.1"
+    "ytdl-core": "^0.29.1"
   }
 }
